@@ -62,8 +62,8 @@ class MainActivity : ComponentActivity() {
     private fun toggle() {
         if (vm.status == VpnStatus.CONNECTED) {
             vm.disconnect()
-        } else if (vm.selectedIsWireGuard) {
-            val intent = GoBackend.VpnService.prepare(this)
+        } else if (vm.servers.getOrNull(vm.selected)?.type != "SSH") {
+            val intent = android.net.VpnService.prepare(this)
             if (intent != null) permissionLauncher.launch(intent) else vm.connect()
         } else {
             vm.connect()
@@ -154,7 +154,7 @@ fun HomeTab(vm: VpnViewModel, onToggle: () -> Unit) {
         }
         if (vm.activeV2ray) {
             Spacer(Modifier.height(8.dp))
-            Text("V2Ray يعمل عبر SOCKS5 على 127.0.0.1:10808. اضبط هذا البروكسي في التطبيق الذي تريد تمريره.", fontSize = 13.sp)
+            Text("V2Ray يعمل كـ VPN كامل: كل حركة الهاتف تمر عبر السيرفر.", fontSize = 13.sp)
         }
         vm.error?.let {
             Spacer(Modifier.height(8.dp))
@@ -271,7 +271,7 @@ fun AddServerDialog(onDismiss: () -> Unit, onSave: (Server) -> Unit) {
                         placeholder = { Text("vless://… أو vmess://… أو trojan://…") },
                         modifier = Modifier.height(150.dp)
                     )
-                    Text("يدعم روابط السيرفرات الفردية. يوفر الاتصال بروكسي SOCKS5 محلي على 127.0.0.1:10808.", fontSize = 12.sp)
+                    Text("يدعم روابط السيرفرات الفردية، ويعمل كـ VPN كامل لكل الهاتف.", fontSize = 12.sp)
                 } else {
                     OutlinedTextField(host, { host = it }, label = { Text("عنوان سيرفر SSH") }, singleLine = true)
                     OutlinedTextField(port, { port = it.filter(Char::isDigit) }, label = { Text("منفذ SSH") }, singleLine = true)
