@@ -227,10 +227,14 @@ fun SettingsDialog(vm: VpnViewModel, onDismiss: () -> Unit) {
                 Spacer(Modifier.height(16.dp))
                 Text("اشتراك السيرفرات (رابط GitHub)", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(4.dp))
-                OutlinedTextField(
-                    subUrl, { subUrl = it.trim() },
-                    label = { Text("رابط الملف (raw) الذي يبدأ بـ https://") }, singleLine = true
-                )
+                if (AppConfig.LOCK_SUB && AppConfig.SUB_URL.isNotBlank()) {
+                    Text("رابط الاشتراك مدمج في التطبيق.", fontSize = 12.sp)
+                } else {
+                    OutlinedTextField(
+                        subUrl, { subUrl = it.trim() },
+                        label = { Text("رابط الملف (raw) الذي يبدأ بـ https://") }, singleLine = true
+                    )
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Switch(subAuto, { subAuto = it })
                     Spacer(Modifier.width(8.dp))
