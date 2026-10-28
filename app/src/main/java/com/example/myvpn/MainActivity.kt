@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -164,9 +165,13 @@ fun HomeTab(vm: VpnViewModel, onToggle: () -> Unit) {
         Spacer(Modifier.height(24.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("السيرفرات", fontSize = 18.sp, modifier = Modifier.weight(1f))
+            IconButton(onClick = { vm.updateSubscription() }, enabled = !vm.subBusy) {
+                Icon(Icons.Default.Refresh, "تحديث السيرفرات")
+            }
             IconButton(onClick = { showAdd = true }) { Icon(Icons.Default.Add, "إضافة") }
         }
 
+        vm.subMessage?.let { Text(it, fontSize = 12.sp) }
         LazyColumn(Modifier.fillMaxWidth()) {
             itemsIndexed(vm.servers) { i, server ->
                 Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
@@ -203,11 +208,13 @@ fun HomeTab(vm: VpnViewModel, onToggle: () -> Unit) {
 fun SettingsDialog(vm: VpnViewModel, onDismiss: () -> Unit) {
     var port by remember { mutableStateOf(vm.socksPort.toString()) }
     var ka by remember { mutableStateOf(vm.keepAlive.toString()) }
+    var subUrl by remember { mutableStateOf(vm.subUrl) }
+    var subAuto by remember { mutableStateOf(vm.subAuto) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("الإعدادات") },
         text = {
-            Column {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(
                     port, { port = it.filter(Char::isDigit) },
                     label = { Text("منفذ SOCKS5 المحلي (1024-65535)") }, singleLine = true
@@ -217,11 +224,29 @@ fun SettingsDialog(vm: VpnViewModel, onDismiss: () -> Unit) {
                     ka, { ka = it.filter(Char::isDigit) },
                     label = { Text("فاصل Keep-Alive بالثواني (5-120)") }, singleLine = true
                 )
+                Spacer(Modifier.height(16.dp))
+                Text("اشتراك السيرفرات (رابط GitHub)", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                OutlinedTextField(
+                    subUrl, { subUrl = it.trim() },
+                    label = { Text("رابط الملف (raw) الذي يبدأ بـ https://") }, singleLine = true
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Switch(subAuto, { subAuto = it })
+                    Spacer(Modifier.width(8.dp))
+                    Text("تحديث تلقائي عند فتح التطبيق", fontSize = 13.sp)
+                }
+                TextButton(
+                    onClick = { vm.saveSubscription(subUrl, subAuto); vm.updateSubscription() },
+                    enabled = !vm.subBusy
+                ) { Text("حفظ وتحديث الآن") }
+                vm.subMessage?.let { Text(it, fontSize = 12.sp) }
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 vm.saveSettings(port.toIntOrNull() ?: 1080, ka.toIntOrNull() ?: 15)
+                vm.saveSubscription(subUrl, subAuto)
                 onDismiss()
             }) { Text("حفظ") }
         },
