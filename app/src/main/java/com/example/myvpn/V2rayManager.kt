@@ -102,12 +102,34 @@ object V2rayManager {
                 context, Intent(context, TunnelService::class.java).putExtra("name", name)
             )
             RedoVpnService.start(context)
+            thread(isDaemon = true) { selfTest() }
         } catch (e: Exception) {
             controller = null
             status = VpnStatus.DISCONNECTED
             val cause = e.cause ?: e
             error = "فشل تشغيل V2Ray: ${cause.message ?: cause.javaClass.simpleName}. تأكد من بناء libv2ray.aar"
             AppLog.add(error!!)
+        }
+    }
+
+    /** يختبر مسار V2Ray وحده (بدون نفق VPN) ويكتب النتيجة في السجل. */
+    private fun selfTest() {
+        try { Thread.sleep(1500) } catch (_: InterruptedException) {}
+        val t0 = System.currentTimeMillis()
+        try {
+            val proxy = java.net.Proxy(
+                java.net.Proxy.Type.SOCKS, java.net.InetSocketAddress("127.0.0.1", 10808)
+            )
+            val c = java.net.URL("http://cp.cloudflare.com/generate_204")
+                .openConnection(proxy) as java.net.HttpURLConnection
+            c.connectTimeout = 10000
+            c.readTimeout = 10000
+            val code = c.responseCode
+            c.disconnect()
+            val ms = System.currentTimeMillis() - t0
+            AppLog.add("اختبار V2Ray: HTTP $code (${ms}ms)" + if (code == 204) " ✔ السيرفر يعمل" else "")
+        } catch (e: Exception) {
+            AppLog.add("اختبار V2Ray فشل: ${e.javaClass.simpleName} ${e.message}")
         }
     }
 
