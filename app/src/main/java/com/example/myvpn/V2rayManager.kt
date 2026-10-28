@@ -22,6 +22,29 @@ object V2rayManager {
         private set
     private var controller: Any? = null
 
+    /** يستخرج روابط vless/vmess/trojan من نص الاشتراك (نص عادي أو Base64). */
+    fun parseSubscription(raw: String): List<String> {
+        var body = raw.removePrefix("\uFEFF").trim()
+        if (!body.contains("://")) {
+            body = try { b64(body) } catch (_: Exception) { body }
+        }
+        return body.lines()
+            .map { it.trim() }
+            .filter { isSupportedLink(it) }
+            .distinct()
+    }
+
+    /** اسم السيرفر من الرابط (ps في vmess أو ما بعد # في الباقي). */
+    fun nameOf(link: String): String = try {
+        val l = link.trim()
+        if (l.startsWith("vmess://", true)) {
+            JSONObject(b64(l.substring(8))).optString("ps")
+        } else {
+            val frag = l.substringAfter("#", "")
+            if (frag.isNotBlank()) decode(frag) else ""
+        }
+    } catch (_: Exception) { "" }
+
     fun isSupportedLink(link: String): Boolean = try {
         val s = link.trim()
         s.startsWith("vless://", true) || s.startsWith("vmess://", true) || s.startsWith("trojan://", true)
