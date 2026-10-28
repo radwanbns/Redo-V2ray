@@ -73,7 +73,14 @@ class VpnViewModel(app: Application) : AndroidViewModel(app) {
     val activeV2ray get() = servers.getOrNull(selected)?.type == "V2RAY" && status == VpnStatus.CONNECTED
 
     // الاشتراك
-    var subUrl by mutableStateOf(prefs.getString("subUrl", "") ?: "")
+    private fun initialSubUrl(): String {
+        val saved = prefs.getString("subUrl", "") ?: ""
+        return if (AppConfig.SUB_URL.isNotBlank() && (AppConfig.LOCK_SUB || saved.isBlank())) {
+            AppConfig.SUB_URL
+        } else saved
+    }
+
+    var subUrl by mutableStateOf(initialSubUrl())
     var subAuto by mutableStateOf(prefs.getBoolean("subAuto", true))
     var subBusy by mutableStateOf(false)
     var subMessage by mutableStateOf<String?>(null)
@@ -84,7 +91,8 @@ class VpnViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun saveSubscription(url: String, auto: Boolean) {
-        subUrl = url.trim()
+        val locked = AppConfig.LOCK_SUB && AppConfig.SUB_URL.isNotBlank()
+        subUrl = if (locked) AppConfig.SUB_URL else url.trim()
         subAuto = auto
         prefs.edit().putString("subUrl", subUrl).putBoolean("subAuto", subAuto).apply()
     }
