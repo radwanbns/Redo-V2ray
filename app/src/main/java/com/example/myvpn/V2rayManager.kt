@@ -74,10 +74,11 @@ object V2rayManager {
             else start.invoke(core, config, zeroFor(start.parameterTypes[1]) ?: 0)
             controller = core
             status = VpnStatus.CONNECTED
-            AppLog.add("V2Ray: تم تشغيل النفق ✔ SOCKS5 على 127.0.0.1:10808")
+            AppLog.add("V2Ray: تم تشغيل المحرك ✔ SOCKS5 على 127.0.0.1:10808")
             ContextCompat.startForegroundService(
                 context, Intent(context, TunnelService::class.java).putExtra("name", name)
             )
+            RedoVpnService.start(context)
         } catch (e: Exception) {
             controller = null
             status = VpnStatus.DISCONNECTED
@@ -87,7 +88,14 @@ object V2rayManager {
         }
     }
 
+    fun onVpnFailed(msg: String) {
+        error = msg
+        AppLog.add("VPN: $msg")
+        thread(isDaemon = true) { disconnect() }
+    }
+
     @Synchronized fun disconnect() {
+        appCtx?.let { try { RedoVpnService.stop(it) } catch (_: Exception) {} }
         try {
             controller?.let { c ->
                 c.javaClass.methods.firstOrNull { it.name.equals("stopLoop", true) && it.parameterTypes.isEmpty() }?.invoke(c)
